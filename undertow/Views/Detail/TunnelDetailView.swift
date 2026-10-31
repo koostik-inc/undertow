@@ -27,64 +27,72 @@ struct TunnelDetailView: View {
         let statistics = manager.statistics[tunnel.id]
         let history = manager.history(for: tunnel.id)
 
-        ScrollView {
-            GlassEffectContainer(spacing: 16) {
-                VStack(alignment: .leading, spacing: 16) {
-                    header(for: tunnel, status: status)
+        GeometryReader { proxy in
+            ScrollView {
+                GlassEffectContainer(spacing: 16) {
+                    VStack(alignment: .leading, spacing: 16) {
+                        header(for: tunnel, status: status)
 
-                    HStack(alignment: .top, spacing: 16) {
-                        statsGrid(status: status, statistics: statistics, latest: history.latest)
-                            .frame(maxWidth: .infinity)
+                        HStack(alignment: .top, spacing: 16) {
+                            statsGrid(status: status, statistics: statistics, latest: history.latest)
+                                .frame(maxWidth: .infinity)
 
-                        Card("Throughput", systemImage: "chart.xyaxis.line", collapsible: true) {
-                            ThroughputChartView(samples: history.samples, window: window)
-                                .frame(height: 165)
-                        } accessory: {
-                            Picker("Window", selection: $window) {
-                                ForEach(ChartWindow.allCases) { Text($0.label).tag($0) }
+                            Card("Throughput", systemImage: "chart.xyaxis.line", collapsible: true) {
+                                ThroughputChartView(samples: history.samples, window: window)
+                                    .frame(height: 165)
+                            } accessory: {
+                                Picker("Window", selection: $window) {
+                                    ForEach(ChartWindow.allCases) { Text($0.label).tag($0) }
+                                }
+                                .pickerStyle(.segmented)
+                                .labelsHidden()
+                                .frame(width: 150)
                             }
-                            .pickerStyle(.segmented)
-                            .labelsHidden()
-                            .frame(width: 150)
+                            .frame(maxWidth: .infinity)
                         }
-                        .frame(maxWidth: .infinity)
-                    }
 
-                    HStack(alignment: .top, spacing: 16) {
-                        Card("Peers", systemImage: "person.2", collapsible: true) {
-                            if tunnel.configuration.peers.isEmpty {
-                                Text("No peers configured. Edit the tunnel to add one.")
-                                    .foregroundStyle(.secondary)
-                            } else {
-                                VStack(alignment: .leading, spacing: 12) {
-                                    ForEach(tunnel.configuration.peers) { peer in
-                                        PeerRow(peer: peer,
-                                                runtime: statistics?.peers.first { $0.publicKey == peer.publicKey },
-                                                isConnected: status == .connected)
-                                        if peer.id != tunnel.configuration.peers.last?.id {
-                                            Divider()
+                        // `maxHeight: .infinity` lets this row absorb the slack from the
+                        // VStack's `minHeight` below, so the Peers/Interface cards reach the
+                        // bottom of the window even when their content is short — lining their
+                        // bottom edge up with the sidebar's, which always fills the full height.
+                        HStack(alignment: .top, spacing: 16) {
+                            Card("Peers", systemImage: "person.2", collapsible: true) {
+                                if tunnel.configuration.peers.isEmpty {
+                                    Text("No peers configured. Edit the tunnel to add one.")
+                                        .foregroundStyle(.secondary)
+                                } else {
+                                    VStack(alignment: .leading, spacing: 12) {
+                                        ForEach(tunnel.configuration.peers) { peer in
+                                            PeerRow(peer: peer,
+                                                    runtime: statistics?.peers.first { $0.publicKey == peer.publicKey },
+                                                    isConnected: status == .connected)
+                                            if peer.id != tunnel.configuration.peers.last?.id {
+                                                Divider()
+                                            }
                                         }
                                     }
                                 }
                             }
-                        }
-                        .frame(maxWidth: .infinity)
+                            .frame(maxWidth: .infinity, maxHeight: .infinity)
 
-                        Card("Interface", systemImage: "network", collapsible: true) {
-                            interfaceDetails(for: tunnel)
-                            let unreachable = tunnel.configuration.unreachableDNSServers
-                            if !unreachable.isEmpty {
-                                Label("DNS server\(unreachable.count == 1 ? "" : "s") \(unreachable.joined(separator: ", ")) \(unreachable.count == 1 ? "is" : "are") not inside any peer's Allowed IPs. While connected, all DNS lookups on this Mac will fail. Add the server to Allowed IPs or remove the DNS entry.",
-                                      systemImage: "exclamationmark.triangle.fill")
-                                    .font(.callout)
-                                    .foregroundStyle(.orange)
-                                    .fixedSize(horizontal: false, vertical: true)
+                            Card("Interface", systemImage: "network", collapsible: true) {
+                                interfaceDetails(for: tunnel)
+                                let unreachable = tunnel.configuration.unreachableDNSServers
+                                if !unreachable.isEmpty {
+                                    Label("DNS server\(unreachable.count == 1 ? "" : "s") \(unreachable.joined(separator: ", ")) \(unreachable.count == 1 ? "is" : "are") not inside any peer's Allowed IPs. While connected, all DNS lookups on this Mac will fail. Add the server to Allowed IPs or remove the DNS entry.",
+                                          systemImage: "exclamationmark.triangle.fill")
+                                        .font(.callout)
+                                        .foregroundStyle(.orange)
+                                        .fixedSize(horizontal: false, vertical: true)
+                                }
                             }
+                            .frame(maxWidth: .infinity, maxHeight: .infinity)
                         }
-                        .frame(maxWidth: .infinity)
+                        .frame(maxHeight: .infinity, alignment: .top)
                     }
+                    .padding()
+                    .frame(minHeight: proxy.size.height, alignment: .top)
                 }
-                .padding()
             }
         }
         .background(AmbientBackground(tint: tunnel.accentColor, secondaryTint: status.color))

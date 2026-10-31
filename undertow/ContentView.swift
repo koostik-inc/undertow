@@ -28,10 +28,12 @@ struct ContentView: View {
         } detail: {
             detail
         }
-        // Wide enough that the tunnel detail header's status and on-demand pills always have
-        // room to sit side by side at their natural size, so they can never be squeezed into
-        // wrapping their text onto a second line.
-        .frame(minWidth: 560)
+        // Wide enough that the tunnel detail header's status and on-demand pills, and the
+        // Overview page's stat tiles and network map legend, always have room to sit at their
+        // natural size — even when the sidebar is dragged out to its max (380pt, see
+        // `navigationSplitViewColumnWidth` below) — so none of that text is ever squeezed into
+        // wrapping onto a second line.
+        .frame(minWidth: 1290)
         // Without an explicit title, the window falls back to showing the app's display name.
         .navigationTitle("")
         .sheet(item: $editorMode) { mode in

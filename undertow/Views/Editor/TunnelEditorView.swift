@@ -31,6 +31,7 @@ struct TunnelEditorView: View {
     @State private var tab: Tab
     @State private var rawText: String
     @State private var isSaving = false
+    @State private var isPrivateKeyVisible = false
 
     init(mode: TunnelEditorMode, onSaved: @escaping (Tunnel) -> Void = { _ in }) {
         self.mode = mode
@@ -94,6 +95,11 @@ struct TunnelEditorView: View {
             .formStyle(.grouped)
             .navigationTitle(isEditing ? "Edit Tunnel" : "New Tunnel")
             .toolbar {
+                ToolbarItem {
+                    Button("Generate Keys") {
+                        draft.privateKey = WireGuardKey.generatePrivateKey().base64Key
+                    }
+                }
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") { dismiss() }
                 }
@@ -104,7 +110,7 @@ struct TunnelEditorView: View {
             }
         }
         #if os(macOS)
-        .frame(minWidth: 560, idealWidth: 620, minHeight: 620, idealHeight: 760)
+        .frame(minWidth: 640, idealWidth: 700, minHeight: 620, idealHeight: 760)
         #endif
     }
 
@@ -134,34 +140,46 @@ struct TunnelEditorView: View {
         Group {
             LabeledContent("Private key") {
                 HStack {
-                    SecureField("", text: $draft.privateKey)
-                        .font(.system(.body, design: .monospaced))
-                        .autocorrectionDisabled()
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.5)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                    Button("Generate", systemImage: "arrow.trianglehead.2.clockwise.rotate.90") {
-                        draft.privateKey = WireGuardKey.generatePrivateKey().base64Key
+                    Group {
+                        if isPrivateKeyVisible {
+                            TextField("", text: $draft.privateKey)
+                        } else {
+                            SecureField("", text: $draft.privateKey)
+                        }
+                    }
+                    .textFieldStyle(.plain)
+                    .font(.system(.body, design: .monospaced))
+                    .autocorrectionDisabled()
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.5)
+                    .frame(minWidth: 380, maxWidth: .infinity)
+
+                    Button(isPrivateKeyVisible ? "Hide Private Key" : "Show Private Key",
+                           systemImage: isPrivateKeyVisible ? "eye.slash" : "eye") {
+                        isPrivateKeyVisible.toggle()
                     }
                     .labelStyle(.iconOnly)
                     .buttonStyle(.glass)
                     .controlSize(.small)
-                    .help("Generate")
+                    .help(isPrivateKeyVisible ? "Hide Private Key" : "Show Private Key")
+                    .frame(width: 28, alignment: .center)
                 }
             }
             LabeledContent("Public key") {
                 HStack(spacing: 6) {
                     Text(draft.derivedPublicKey ?? "Invalid private key")
                         .font(.system(.body, design: .monospaced))
-                        .foregroundStyle(.secondary)
                         .textSelection(.enabled)
+                        .multilineTextAlignment(.trailing)
                         .lineLimit(nil)
                         .fixedSize(horizontal: false, vertical: true)
-                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .frame(maxWidth: .infinity, alignment: .trailing)
                     if let publicKey = draft.derivedPublicKey {
                         CopyButton(text: publicKey)
+                            .frame(width: 28, alignment: .center)
                     }
                 }
+                .foregroundStyle(.primary)
             }
             LabeledContent("Addresses") {
                 TextField("", text: $draft.addresses, prompt: Text("10.0.0.2/32, fd00::2/128"))
