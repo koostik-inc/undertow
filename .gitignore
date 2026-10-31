@@ -9,6 +9,25 @@ xcuserdata/
 DerivedData/
 build/
 .build/
+*.hmap
+
+# App packaging
+*.ipa
+*.dSYM.zip
+*.dSYM
+
+# Playgrounds
+timeline.xctimeline
+playground.xcworkspace
+
+# Carthage
+Carthage/Build/
+
+# fastlane
+fastlane/report.xml
+fastlane/Preview.html
+fastlane/screenshots/**/*.png
+fastlane/test_output
 
 # Stray xcodebuild cache left by sandboxed builds (see CLAUDE.md)
 /[0-9]*.[0-9]*-*/
