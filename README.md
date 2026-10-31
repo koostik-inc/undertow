@@ -6,12 +6,14 @@ Undertow stores tunnels in the standard wg-quick `.conf` format. You can import 
 
 ## Features
 
-- Import `.conf` files (several at once), or create tunnels from scratch with generated keys
-- Form editor with per-field validation for interface and peer settings (keys, addresses, allowed IPs, endpoints, keepalive)
-- Export any tunnel back to wg-quick text, or copy keys and config to the clipboard
-- Connect and disconnect from the main window or the menu bar, with an optional connect-on-demand setting
+- Import `.conf` files (several at once) or a config from the clipboard, or create tunnels from scratch with generated keys
+- Form editor with per-field validation for interface and peer settings (keys, addresses, allowed IPs, endpoints, MTU, listen port, preshared keys, keepalive)
+- Duplicate, reorder, and delete tunnels; export any tunnel back to wg-quick text, or copy keys and config to the clipboard
+- Connect and disconnect from the main window or the menu bar (per-tunnel toggles and **Disconnect All**), with an optional connect-on-demand setting
 - Per-tunnel and combined throughput charts, sparklines, per-peer handshake and transfer stats
 - An overview with a network map of active tunnels and their peers
+- A warning in the editor and detail view when a DNS server isn't routed through any peer
+- Failures (connect, disconnect, import, saving) and tunnels that get no handshake within 15 seconds are reported as macOS notifications rather than in-app alerts
 - A Settings pane for choosing the backend (Automatic, System VPN, Simulated) and checking the extension and entitlement status
 
 ## Requirements
@@ -34,6 +36,14 @@ Without the entitlement, the app still builds and runs, but **Automatic** falls 
 
 The first build compiles wireguard-go through the `WireGuardGoBridgemacOS` external-build target, so it takes noticeably longer than later builds.
 
+Undertow runs as a single instance. A second copy brings the running one to the front and quits, so if **Run** in Xcode seems to exit immediately, another copy is probably already running.
+
+From the command line:
+
+```sh
+xcodebuild build -project undertow.xcodeproj -scheme undertow -destination 'platform=macOS'
+```
+
 ### Running the tests
 
 The tests use Swift Testing and live in `undertowTests/`:
@@ -42,7 +52,7 @@ The tests use Swift Testing and live in `undertowTests/`:
 xcodebuild test -project undertow.xcodeproj -scheme undertowTests -destination 'platform=macOS'
 ```
 
-They cover config parsing and serialization, key and address validation, throughput rate calculation, editor draft validation, and the simulated backend lifecycle.
+They cover config parsing and serialization, key and address validation (including DNS reachability through peers), throughput rate calculation, editor draft validation, persistence, the single-instance lock, and the simulated backend lifecycle.
 
 ## Security notes
 
@@ -60,24 +70,27 @@ They cover config parsing and serialization, key and address validation, through
 │      │                                       │      │     (WireGuardKit / Go)    │
 │ TunnelBackend ─┬─ NetworkExtensionBackend ───┼─────▶│                            │
 │                └─ SimulatedTunnelBackend     │ IPC  │                            │
-│ TunnelPersistence → tunnels.json             │      └────────────────────────────┘
-└──────────────────────────────────────────────┘
+│ TunnelPersistence → tunnels.json             │      │                            │
+│ TunnelConfigurationKeychain ─────────────────┼─────▶│ (loads config by reference)│
+└──────────────────────────────────────────────┘      └────────────────────────────┘
 ```
 
-- **`TunnelManager`** is the single source of truth for the tunnel list, live status, counters, and throughput history. It persists tunnels and delegates connection work to a `TunnelBackend`.
-- **`NetworkExtensionTunnelBackend`** stores each tunnel as an `NETunnelProviderManager`. The wg-quick text and the tunnel's UUID go in `providerConfiguration`. Statistics come from the extension through `sendProviderMessage`.
-- **`PacketTunnelProvider`** parses the wg-quick text into WireGuardKit types, starts the adapter, and answers statistics requests by parsing wireguard-go's UAPI output.
-- **`TunnelProviderMessage`** defines the IPC contract. It is one file that compiles into both targets.
-- **`SimulatedTunnelBackend`** produces realistic, bursty traffic with a mean-reverting random walk. Previews and tests use it.
+- **`TunnelManager`** is the single source of truth for the tunnel list, live status, counters, and throughput history. It polls the backend once a second, persists tunnels, and delegates connection work to a `TunnelBackend`. At launch it re-synchronizes any tunnel whose system copy is out of date.
+- **`NetworkExtensionTunnelBackend`** stores each tunnel as an `NETunnelProviderManager`. The wg-quick text goes in the data-protection keychain (`TunnelConfigurationKeychain`), and the manager holds only a persistent keychain reference in `passwordReference`, plus the tunnel's UUID and a SHA-256 digest of the config in `providerConfiguration`. Statistics come from the extension through `sendProviderMessage`.
+- **`PacketTunnelProvider`** loads the wg-quick text from the keychain, parses it into WireGuardKit types, starts the adapter, and answers statistics requests by parsing wireguard-go's UAPI output.
+- **`TunnelProviderMessage`** and **`TunnelConfigurationKeychain`** define the app ↔ extension contract. Each is one file that compiles into both targets.
+- **`SimulatedTunnelBackend`** produces realistic, bursty traffic with a mean-reverting random walk. Previews, tests, and builds without the extension or entitlement use it.
+- **`ErrorNotifier`** delivers operation failures as macOS notifications, and **`SingleInstanceLock`** keeps a second copy of the app from running.
 
-Tunnels, including their private keys, are saved as JSON at `~/Library/Containers/io.craterlabs.undertow/Data/Library/Application Support/Undertow/tunnels.json`. The file is written atomically.
+Tunnels, including their private keys, are saved as JSON at `~/Library/Containers/io.craterlabs.undertow/Data/Library/Application Support/Undertow/tunnels.json`. The file is written atomically with complete file protection.
 
 ## Project layout
 
 ```
 undertow/                 App target (SwiftUI)
   Models/                 Tunnel, WireGuard config types, keys, status, throughput history
-  Services/               TunnelManager, backends, persistence, IPC message types, preview data
+  Services/               TunnelManager, backends, persistence, keychain, IPC message types,
+                          notifications, single-instance lock, preview data
   Views/                  Sidebar, Overview (network map), Detail, Editor, Components, Settings, Menu bar
 PacketTunnel/             Packet tunnel provider extension (macOS)
 undertowTests/            Swift Testing suites
@@ -86,7 +99,8 @@ Vendor/wireguard-apple/   Trimmed, locally patched WireGuardKit (see VENDOR.md)
 
 ## Limitations
 
-- wg-quick hooks (`PreUp`, `PostUp`, `PreDown`, `PostDown`, `Table`, `SaveConfig`) are ignored, because a Network Extension cannot run shell commands.
+- wg-quick hooks and routing options (`PreUp`, `PostUp`, `PreDown`, `PostDown`, `Table`, `SaveConfig`, `FwMark`) are ignored, because a Network Extension cannot run shell commands or manage routing tables.
+- Connect on demand has no paused state: the system reconnects an on-demand tunnel almost immediately. Disconnecting such a tunnel therefore also turns its connect-on-demand setting off, and the toggle shows this.
 - The packet tunnel extension and Go bridge build for macOS only. The app target also lists iOS and visionOS as supported platforms, but on those platforms it runs with the simulated backend.
 - Changing the backend preference only takes effect after a relaunch.
 
