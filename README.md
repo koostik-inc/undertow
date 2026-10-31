@@ -90,6 +90,12 @@ Vendor/wireguard-apple/   Trimmed, locally patched WireGuardKit (see VENDOR.md)
 - The packet tunnel extension and Go bridge build for macOS only. The app target also lists iOS and visionOS as supported platforms, but on those platforms it runs with the simulated backend.
 - Changing the backend preference only takes effect after a relaunch.
 
+## Authors
+
+Undertow is developed by Khalid Eidoo, Koostik Inc.
+
 ## License
 
-The vendored WireGuardKit is under the MIT license (see `Vendor/wireguard-apple/COPYING`). Undertow itself does not have a license yet.
+Undertow is licensed under the [Apache License 2.0](LICENSE).
+
+The vendored WireGuardKit is under the MIT license (see `Vendor/wireguard-apple/COPYING`).
