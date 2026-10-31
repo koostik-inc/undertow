@@ -30,7 +30,6 @@ struct TunnelEditorView: View {
     @State private var draft: TunnelDraft
     @State private var tab: Tab
     @State private var rawText: String
-    @State private var validationError: PresentableError?
     @State private var isSaving = false
 
     init(mode: TunnelEditorMode, onSaved: @escaping (Tunnel) -> Void = { _ in }) {
@@ -103,13 +102,6 @@ struct TunnelEditorView: View {
                         .disabled(isSaving)
                 }
             }
-            .alert(validationError?.title ?? "Invalid Configuration",
-                   isPresented: Binding(get: { validationError != nil }, set: { if !$0 { validationError = nil } }),
-                   presenting: validationError) { _ in
-                Button("OK", role: .cancel) {}
-            } message: { error in
-                Text(error.message)
-            }
         }
         #if os(macOS)
         .frame(minWidth: 560, idealWidth: 620, minHeight: 620, idealHeight: 760)
@@ -140,32 +132,42 @@ struct TunnelEditorView: View {
     @ViewBuilder
     private var interfaceFields: some View {
         Group {
-            VStack(alignment: .leading, spacing: 6) {
+            LabeledContent("Private key") {
                 HStack {
-                    TextField("Private key", text: $draft.privateKey)
+                    SecureField("", text: $draft.privateKey)
                         .font(.system(.body, design: .monospaced))
                         .autocorrectionDisabled()
-                    Button("Generate") {
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.5)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                    Button("Generate", systemImage: "arrow.trianglehead.2.clockwise.rotate.90") {
                         draft.privateKey = WireGuardKey.generatePrivateKey().base64Key
                     }
+                    .labelStyle(.iconOnly)
                     .buttonStyle(.glass)
                     .controlSize(.small)
+                    .help("Generate")
                 }
+            }
+            LabeledContent("Public key") {
                 HStack(spacing: 6) {
-                    Text("Public key:")
-                    Text(draft.derivedPublicKey ?? "invalid private key")
-                        .font(.caption.monospaced())
+                    Text(draft.derivedPublicKey ?? "Invalid private key")
+                        .font(.system(.body, design: .monospaced))
+                        .foregroundStyle(.secondary)
                         .textSelection(.enabled)
+                        .lineLimit(nil)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .frame(maxWidth: .infinity, alignment: .leading)
                     if let publicKey = draft.derivedPublicKey {
                         CopyButton(text: publicKey)
                     }
                 }
-                .font(.caption)
-                .foregroundStyle(.secondary)
             }
-            TextField("Addresses", text: $draft.addresses, prompt: Text("10.0.0.2/32, fd00::2/128"))
-                .font(.system(.body, design: .monospaced))
-                .autocorrectionDisabled()
+            LabeledContent("Addresses") {
+                TextField("", text: $draft.addresses, prompt: Text("10.0.0.2/32, fd00::2/128"))
+                    .font(.system(.body, design: .monospaced))
+                    .autocorrectionDisabled()
+            }
             TextField("DNS servers", text: $draft.dns, prompt: Text("1.1.1.1, example.internal"))
                 .autocorrectionDisabled()
             TextField("Listen port", text: $draft.listenPort, prompt: Text("Automatic"))
@@ -178,24 +180,30 @@ struct TunnelEditorView: View {
             ForEach($draft.peers) { $peer in
                 let index = draft.peers.firstIndex { $0.id == peer.id } ?? 0
                 Section {
-                    TextField("Public key", text: $peer.publicKey)
-                        .font(.system(.body, design: .monospaced))
-                        .autocorrectionDisabled()
-                    HStack {
-                        TextField("Pre-shared key", text: $peer.preSharedKey, prompt: Text("Optional"))
+                    LabeledContent("Public key") {
+                        TextField("", text: $peer.publicKey)
                             .font(.system(.body, design: .monospaced))
                             .autocorrectionDisabled()
-                        Button("Generate") {
-                            peer.preSharedKey = WireGuardKey.generatePresharedKey().base64Key
+                    }
+                    LabeledContent("Pre-shared key") {
+                        HStack {
+                            TextField("", text: $peer.preSharedKey, prompt: Text("Optional"))
+                                .font(.system(.body, design: .monospaced))
+                                .autocorrectionDisabled()
+                            Button("Generate") {
+                                peer.preSharedKey = WireGuardKey.generatePresharedKey().base64Key
+                            }
+                            .buttonStyle(.glass)
+                            .controlSize(.small)
                         }
-                        .buttonStyle(.glass)
-                        .controlSize(.small)
                     }
                     TextField("Endpoint", text: $peer.endpoint, prompt: Text("vpn.example.com:51820"))
                         .autocorrectionDisabled()
-                    TextField("Allowed IPs", text: $peer.allowedIPs, prompt: Text("0.0.0.0/0, ::/0"))
-                        .font(.system(.body, design: .monospaced))
-                        .autocorrectionDisabled()
+                    LabeledContent("Allowed IPs") {
+                        TextField("", text: $peer.allowedIPs, prompt: Text("0.0.0.0/0, ::/0"))
+                            .font(.system(.body, design: .monospaced))
+                            .autocorrectionDisabled()
+                    }
                     TextField("Persistent keepalive", text: $peer.persistentKeepAlive, prompt: Text("Off"))
                 } header: {
                     HStack {
@@ -230,7 +238,7 @@ struct TunnelEditorView: View {
             }
             tab = newTab
         } catch {
-            validationError = PresentableError(title: "Can't Switch Editor", message: error.localizedDescription)
+            ErrorNotifier.post(title: "Can't Switch Editor", message: error.localizedDescription)
         }
     }
 
@@ -263,7 +271,7 @@ struct TunnelEditorView: View {
                 dismiss()
             }
         } catch {
-            validationError = PresentableError(title: "Invalid Configuration", message: error.localizedDescription)
+            ErrorNotifier.post(title: "Invalid Configuration", message: error.localizedDescription)
         }
     }
 }

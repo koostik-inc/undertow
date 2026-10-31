@@ -3,13 +3,6 @@ import Observation
 import SwiftUI
 import os
 
-/// A user-facing error wrapper suitable for `.alert(item:)`.
-nonisolated struct PresentableError: Identifiable, Sendable {
-    let id = UUID()
-    let title: String
-    let message: String
-}
-
 /// The app's single source of truth for tunnels, their live status, and throughput history.
 @Observable
 @MainActor
@@ -22,7 +15,9 @@ final class TunnelManager {
     private(set) var aggregateHistory = ThroughputHistory()
     /// Tunnels with an in-flight connect/disconnect request.
     private(set) var busyTunnelIDs: Set<UUID> = []
-    var presentedError: PresentableError?
+    /// Tunnels a no-handshake notification has already been sent for, so repeated polls while
+    /// the condition persists don't send one every second; cleared once it resolves.
+    private var handshakeWarningsSent: Set<UUID> = []
 
     let backend: any TunnelBackend
     private let persistence: TunnelPersistence
@@ -134,6 +129,15 @@ final class TunnelManager {
                 aggregateSent += latest.sentBytesPerSecond
             }
             histories[tunnel.id] = history
+
+            if isAwaitingHandshake(tunnel.id) {
+                if handshakeWarningsSent.insert(tunnel.id).inserted {
+                    ErrorNotifier.post(title: "No Handshake From Peer",
+                                       message: "“\(tunnel.name)” hasn't heard back from its peer yet. Routed traffic and DNS may not be working until it does.")
+                }
+            } else {
+                handshakeWarningsSent.remove(tunnel.id)
+            }
         }
 
         aggregateHistory.record(receivedBytesPerSecond: aggregateReceived, sentBytesPerSecond: aggregateSent, at: now)
@@ -188,6 +192,15 @@ final class TunnelManager {
         statistics.values.reduce(0) { $0 + $1.sentBytes }
     }
 
+    /// The start time of the longest-running connection, i.e. the earliest `connectedSince`
+    /// among currently connected tunnels.
+    var longestConnectionStart: Date? {
+        tunnels
+            .filter { status(for: $0.id) == .connected }
+            .compactMap { statistics[$0.id]?.connectedSince }
+            .min()
+    }
+
     /// Exports a tunnel as wg-quick text.
     func configurationText(for tunnel: Tunnel) -> String {
         WireGuardConfigFile.serialize(tunnel.configuration)
@@ -227,6 +240,7 @@ final class TunnelManager {
         statuses[tunnel.id] = nil
         statistics[tunnel.id] = nil
         histories[tunnel.id] = nil
+        handshakeWarningsSent.remove(tunnel.id)
         persist()
     }
 
@@ -271,6 +285,19 @@ final class TunnelManager {
         guard !busyTunnelIDs.contains(tunnel.id) else { return }
         busyTunnelIDs.insert(tunnel.id)
         defer { busyTunnelIDs.remove(tunnel.id) }
+
+        // Connect on Demand has no "paused" state: once it's armed, the system tends to
+        // reconnect the tunnel almost immediately while the Mac is online, so a disconnect
+        // can't be trusted to stick while it stays on. Turn the preference off first — visibly,
+        // in the on-demand toggle — instead of silently suspending it behind the scenes and
+        // trying to restore it later, which just delays the same reconnect by a few seconds.
+        // Reconnecting, or flipping the toggle back on, are both still one click away.
+        if tunnel.connectOnDemand {
+            var withoutOnDemand = tunnel
+            withoutOnDemand.connectOnDemand = false
+            await update(withoutOnDemand)
+        }
+
         do {
             try await backend.stop(tunnel)
             statuses[tunnel.id] = backend.status(for: tunnel.id)
@@ -312,9 +339,10 @@ final class TunnelManager {
     }
 
     private func report(_ error: Error, title: String) {
-        // Surface in the UI and persist to the unified log so failures can be diagnosed later.
+        // Logged for diagnosis and surfaced as a system notification, never in the app's own
+        // UI: an operation failure shouldn't block whatever the person is doing in the window.
         Self.logger.error("\(title, privacy: .public): \(error.localizedDescription, privacy: .public)")
-        presentedError = PresentableError(title: title, message: error.localizedDescription)
+        ErrorNotifier.post(title: title, message: error.localizedDescription)
     }
 
     private static let logger = Logger(subsystem: "io.craterlabs.undertow", category: "TunnelManager")
@@ -330,6 +358,7 @@ final class TunnelManager {
             if !taken.contains(candidate) { return candidate }
             counter += 1
         }
+        fatalError("unreachable: the loop above only exits by returning")
     }
 }
 

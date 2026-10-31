@@ -60,39 +60,82 @@ extension StatTile where Value == Text {
 }
 
 /// A Liquid Glass card with a title row, for sections of a detail screen.
+///
+/// Pass `collapsible: true` to let the header fold the content away; the state is remembered
+/// per title across launches. The accessory is hidden while collapsed.
 struct Card<Content: View, Accessory: View>: View {
     let title: String
     var systemImage: String?
+    let collapsible: Bool
     @ViewBuilder let content: () -> Content
     @ViewBuilder let accessory: () -> Accessory
 
+    @AppStorage private var isCollapsed: Bool
+
     init(_ title: String,
          systemImage: String? = nil,
+         collapsible: Bool = false,
          @ViewBuilder content: @escaping () -> Content,
          @ViewBuilder accessory: @escaping () -> Accessory = { EmptyView() }) {
         self.title = title
         self.systemImage = systemImage
+        self.collapsible = collapsible
         self.content = content
         self.accessory = accessory
+        _isCollapsed = AppStorage(wrappedValue: false, "card.collapsed.\(title)")
     }
 
+    private var showsContent: Bool { !(collapsible && isCollapsed) }
+
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: showsContent ? 12 : 0) {
             HStack {
-                if let systemImage {
-                    Label(title, systemImage: systemImage)
-                        .font(.headline)
+                if collapsible {
+                    Button {
+                        withAnimation(.snappy(duration: 0.25)) {
+                            isCollapsed.toggle()
+                        }
+                    } label: {
+                        HStack(spacing: 6) {
+                            titleLabel
+                            Image(systemName: "chevron.right")
+                                .font(.caption.weight(.semibold))
+                                .foregroundStyle(.secondary)
+                                .rotationEffect(.degrees(isCollapsed ? 0 : 90))
+                        }
+                        .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel(title)
+                    .accessibilityValue(isCollapsed ? "Collapsed" : "Expanded")
+                    .accessibilityHint("Double-tap to \(isCollapsed ? "expand" : "collapse")")
                 } else {
-                    Text(title).font(.headline)
+                    titleLabel
                 }
                 Spacer()
-                accessory()
+                if showsContent {
+                    accessory()
+                }
             }
-            content()
+            if showsContent {
+                content()
+                    .transition(.opacity.combined(with: .move(edge: .top)))
+            }
         }
+        .clipped()
         .padding(16)
-        .frame(maxWidth: .infinity, alignment: .leading)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .glassEffect(.regular, in: .rect(cornerRadius: 18))
+    }
+
+    @ViewBuilder
+    private var titleLabel: some View {
+        if let systemImage {
+            Label(title, systemImage: systemImage)
+                .font(.headline)
+        } else {
+            Text(title).font(.headline)
+        }
     }
 }
 

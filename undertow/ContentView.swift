@@ -1,5 +1,8 @@
 import SwiftUI
 import UniformTypeIdentifiers
+#if os(macOS)
+import AppKit
+#endif
 
 /// Sidebar destinations.
 enum SidebarItem: Hashable {
@@ -14,16 +17,10 @@ struct ContentView: View {
     @State private var selection: SidebarItem? = .overview
     @State private var editorMode: TunnelEditorMode?
     @State private var isImporting = false
-    @State private var importError: PresentableError?
     @State private var tunnelPendingDelete: Tunnel?
     #if !os(macOS)
     @State private var isShowingSettings = false
     #endif
-
-    /// Import problems and backend errors share one alert.
-    private var activeError: PresentableError? {
-        importError ?? manager.presentedError
-    }
 
     var body: some View {
         NavigationSplitView {
@@ -31,6 +28,12 @@ struct ContentView: View {
         } detail: {
             detail
         }
+        // Wide enough that the tunnel detail header's status and on-demand pills always have
+        // room to sit side by side at their natural size, so they can never be squeezed into
+        // wrapping their text onto a second line.
+        .frame(minWidth: 560)
+        // Without an explicit title, the window falls back to showing the app's display name.
+        .navigationTitle("")
         .sheet(item: $editorMode) { mode in
             TunnelEditorView(mode: mode) { tunnel in
                 selection = .tunnel(tunnel.id)
@@ -55,14 +58,6 @@ struct ContentView: View {
         } message: { _ in
             Text("This disconnects the tunnel and removes its configuration and keys from this device.")
         }
-        .alert(activeError?.title ?? "Error",
-               isPresented: Binding(get: { activeError != nil },
-                                    set: { if !$0 { importError = nil; manager.presentedError = nil } }),
-               presenting: activeError) { _ in
-            Button("OK", role: .cancel) {}
-        } message: { error in
-            Text(error.message)
-        }
         #if !os(macOS)
         .sheet(isPresented: $isShowingSettings) {
             NavigationStack {
@@ -79,17 +74,33 @@ struct ContentView: View {
 
     // MARK: - Sidebar
 
+    /// Matches the native sidebar's own unfocused-window selection color, so the highlight looks
+    /// the same whether or not Undertow is the active app. `List`'s built-in `selection:` binding
+    /// draws its own focused-window highlight (a solid accent fill with inverted white text) that
+    /// can't be recolored, so selection is tracked and drawn manually instead.
+    #if os(macOS)
+    private static let selectedRowBackground = Color(nsColor: .unemphasizedSelectedContentBackgroundColor)
+    #else
+    private static let selectedRowBackground = Color(.systemGray5)
+    #endif
+
     private var sidebar: some View {
-        List(selection: $selection) {
+        List {
             Section {
-                Label("Overview", systemImage: "map")
-                    .tag(SidebarItem.overview)
+                sidebarRow(isSelected: selection == .overview) {
+                    Label("Overview", systemImage: "map")
+                } onSelect: {
+                    selection = .overview
+                }
             }
             Section("Tunnels") {
                 ForEach(manager.tunnels) { tunnel in
-                    TunnelRowView(tunnel: tunnel)
-                        .tag(SidebarItem.tunnel(tunnel.id))
-                        .contextMenu { contextMenu(for: tunnel) }
+                    sidebarRow(isSelected: selection == .tunnel(tunnel.id)) {
+                        TunnelRowView(tunnel: tunnel)
+                    } onSelect: {
+                        selection = .tunnel(tunnel.id)
+                    }
+                    .contextMenu { contextMenu(for: tunnel) }
                 }
                 .onMove { source, destination in
                     manager.move(fromOffsets: source, toOffset: destination)
@@ -100,7 +111,6 @@ struct ContentView: View {
                 }
             }
         }
-        .navigationTitle("Undertow")
         .navigationSplitViewColumnWidth(min: 240, ideal: 290, max: 380)
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
@@ -119,6 +129,28 @@ struct ContentView: View {
         .safeAreaInset(edge: .bottom) {
             backendFooter
         }
+    }
+
+    /// A tappable sidebar row with a manually drawn selection background, since `List`'s own
+    /// `selection:` highlight can't be recolored (see `selectedRowBackground`). Tints the row's
+    /// label text and icon blue when selected, matching Mail's sidebar treatment; this only
+    /// affects content that doesn't already set its own explicit foreground color, so
+    /// `TunnelRowView`'s connect/disconnect button (which colors itself by connection state,
+    /// not by sidebar selection) is unaffected.
+    private func sidebarRow<Content: View>(isSelected: Bool,
+                                            @ViewBuilder content: () -> Content,
+                                            onSelect: @escaping () -> Void) -> some View {
+        content()
+            .foregroundStyle(isSelected ? Color.accentColor : Color.primary)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .contentShape(Rectangle())
+            .onTapGesture(perform: onSelect)
+            .listRowBackground(
+                RoundedRectangle(cornerRadius: 7, style: .continuous)
+                    .fill(isSelected ? Self.selectedRowBackground : Color.clear)
+                    .padding(.horizontal, 8)
+            )
+            .accessibilityAddTraits(isSelected ? .isSelected : [])
     }
 
     private var addMenu: some View {
@@ -191,8 +223,8 @@ struct ContentView: View {
 
     private func importFromClipboard() {
         guard let text = Pasteboard.readString(), !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
-            importError = PresentableError(title: "Clipboard Is Empty",
-                                           message: "Copy a WireGuard configuration first, then try again.")
+            ErrorNotifier.post(title: "Clipboard Is Empty",
+                              message: "Copy a WireGuard configuration first, then try again.")
             return
         }
         editorMode = .create(initialText: text)
@@ -201,7 +233,7 @@ struct ContentView: View {
     private func importFiles(_ result: Result<[URL], Error>) async {
         switch result {
         case .failure(let error):
-            importError = PresentableError(title: "Import Failed", message: error.localizedDescription)
+            ErrorNotifier.post(title: "Import Failed", message: error.localizedDescription)
         case .success(let urls):
             await importURLs(urls)
         }
@@ -229,8 +261,8 @@ struct ContentView: View {
             selection = .tunnel(lastImported.id)
         }
         if !failures.isEmpty {
-            importError = PresentableError(title: failures.count == 1 ? "Import Failed" : "Some Imports Failed",
-                                           message: failures.joined(separator: "\n"))
+            ErrorNotifier.post(title: failures.count == 1 ? "Import Failed" : "Some Imports Failed",
+                              message: failures.joined(separator: "\n"))
         }
     }
 }

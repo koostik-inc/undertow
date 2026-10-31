@@ -50,7 +50,7 @@ extension TunnelStatus {
 /// Fixed series colors shared by every chart and the network map.
 nonisolated enum TrafficColor {
     static let download = Color.blue
-    static let upload = Color.orange
+    static let upload = Color(red: 0.75, green: 0.55, blue: 0.95)
 }
 
 extension Tunnel {

@@ -1,0 +1,14 @@
+# macOS
+.DS_Store
+
+# Xcode per-user state
+xcuserdata/
+*.xcuserstate
+
+# Build output
+DerivedData/
+build/
+.build/
+
+# Stray xcodebuild cache left by sandboxed builds (see CLAUDE.md)
+/[0-9]*.[0-9]*-*/

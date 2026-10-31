@@ -285,6 +285,57 @@ struct TunnelPersistenceTests {
     }
 }
 
+@Suite("Single instance lock")
+struct SingleInstanceLockTests {
+    private func temporaryLockURL() -> URL {
+        FileManager.default.temporaryDirectory
+            .appending(path: "Undertow Lock \(UUID().uuidString)", directoryHint: .isDirectory)
+            .appending(path: ".instance.lock")
+    }
+
+    @Test("Only one holder at a time, and release hands the lock over")
+    func exclusiveOwnership() {
+        let url = temporaryLockURL()
+        defer { try? FileManager.default.removeItem(at: url.deletingLastPathComponent()) }
+
+        let first = SingleInstanceLock(fileURL: url)
+        let second = SingleInstanceLock(fileURL: url)
+
+        #expect(first.acquire())
+        #expect(first.isHeld)
+        #expect(!second.acquire())
+        #expect(!second.isHeld)
+
+        first.release()
+        #expect(!first.isHeld)
+        #expect(second.acquire())
+        second.release()
+    }
+
+    @Test("Acquiring twice from the same holder is idempotent")
+    func idempotentAcquire() {
+        let url = temporaryLockURL()
+        defer { try? FileManager.default.removeItem(at: url.deletingLastPathComponent()) }
+
+        let lock = SingleInstanceLock(fileURL: url)
+        #expect(lock.acquire())
+        #expect(lock.acquire())
+        #expect(lock.isHeld)
+        lock.release()
+    }
+
+    @Test("Creates the lock file's directory on demand")
+    func createsDirectory() {
+        let url = temporaryLockURL()
+        defer { try? FileManager.default.removeItem(at: url.deletingLastPathComponent()) }
+
+        let lock = SingleInstanceLock(fileURL: url)
+        #expect(lock.acquire())
+        #expect(FileManager.default.fileExists(atPath: url.path(percentEncoded: false)))
+        lock.release()
+    }
+}
+
 @Suite("Simulated backend")
 @MainActor
 struct SimulatedBackendTests {

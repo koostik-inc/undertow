@@ -31,71 +31,85 @@ struct TunnelDetailView: View {
             GlassEffectContainer(spacing: 16) {
                 VStack(alignment: .leading, spacing: 16) {
                     header(for: tunnel, status: status)
-                    statsGrid(status: status, statistics: statistics, latest: history.latest)
 
-                    Card("Throughput", systemImage: "chart.xyaxis.line") {
-                        ThroughputChartView(samples: history.samples, window: window)
-                            .frame(height: 220)
-                    } accessory: {
-                        Picker("Window", selection: $window) {
-                            ForEach(ChartWindow.allCases) { Text($0.label).tag($0) }
+                    HStack(alignment: .top, spacing: 16) {
+                        statsGrid(status: status, statistics: statistics, latest: history.latest)
+                            .frame(maxWidth: .infinity)
+
+                        Card("Throughput", systemImage: "chart.xyaxis.line", collapsible: true) {
+                            ThroughputChartView(samples: history.samples, window: window)
+                                .frame(height: 165)
+                        } accessory: {
+                            Picker("Window", selection: $window) {
+                                ForEach(ChartWindow.allCases) { Text($0.label).tag($0) }
+                            }
+                            .pickerStyle(.segmented)
+                            .labelsHidden()
+                            .frame(width: 150)
                         }
-                        .pickerStyle(.segmented)
-                        .labelsHidden()
-                        .frame(width: 150)
+                        .frame(maxWidth: .infinity)
                     }
 
-                    Card("Peers", systemImage: "person.2") {
-                        if tunnel.configuration.peers.isEmpty {
-                            Text("No peers configured. Edit the tunnel to add one.")
-                                .foregroundStyle(.secondary)
-                        } else {
-                            VStack(alignment: .leading, spacing: 12) {
-                                ForEach(tunnel.configuration.peers) { peer in
-                                    PeerRow(peer: peer,
-                                            runtime: statistics?.peers.first { $0.publicKey == peer.publicKey },
-                                            isConnected: status == .connected)
-                                    if peer.id != tunnel.configuration.peers.last?.id {
-                                        Divider()
+                    HStack(alignment: .top, spacing: 16) {
+                        Card("Peers", systemImage: "person.2", collapsible: true) {
+                            if tunnel.configuration.peers.isEmpty {
+                                Text("No peers configured. Edit the tunnel to add one.")
+                                    .foregroundStyle(.secondary)
+                            } else {
+                                VStack(alignment: .leading, spacing: 12) {
+                                    ForEach(tunnel.configuration.peers) { peer in
+                                        PeerRow(peer: peer,
+                                                runtime: statistics?.peers.first { $0.publicKey == peer.publicKey },
+                                                isConnected: status == .connected)
+                                        if peer.id != tunnel.configuration.peers.last?.id {
+                                            Divider()
+                                        }
                                     }
                                 }
                             }
                         }
-                    }
+                        .frame(maxWidth: .infinity)
 
-                    Card("Interface", systemImage: "network") {
-                        interfaceDetails(for: tunnel)
-                        let unreachable = tunnel.configuration.unreachableDNSServers
-                        if !unreachable.isEmpty {
-                            Label("DNS server\(unreachable.count == 1 ? "" : "s") \(unreachable.joined(separator: ", ")) \(unreachable.count == 1 ? "is" : "are") not inside any peer's Allowed IPs. While connected, all DNS lookups on this Mac will fail. Add the server to Allowed IPs or remove the DNS entry.",
-                                  systemImage: "exclamationmark.triangle.fill")
-                                .font(.callout)
-                                .foregroundStyle(.orange)
-                                .fixedSize(horizontal: false, vertical: true)
+                        Card("Interface", systemImage: "network", collapsible: true) {
+                            interfaceDetails(for: tunnel)
+                            let unreachable = tunnel.configuration.unreachableDNSServers
+                            if !unreachable.isEmpty {
+                                Label("DNS server\(unreachable.count == 1 ? "" : "s") \(unreachable.joined(separator: ", ")) \(unreachable.count == 1 ? "is" : "are") not inside any peer's Allowed IPs. While connected, all DNS lookups on this Mac will fail. Add the server to Allowed IPs or remove the DNS entry.",
+                                      systemImage: "exclamationmark.triangle.fill")
+                                    .font(.callout)
+                                    .foregroundStyle(.orange)
+                                    .fixedSize(horizontal: false, vertical: true)
+                            }
                         }
+                        .frame(maxWidth: .infinity)
                     }
                 }
                 .padding()
             }
         }
         .background(AmbientBackground(tint: tunnel.accentColor, secondaryTint: status.color))
-        .navigationTitle(tunnel.name)
         .toolbar {
             ToolbarItemGroup {
-                Button("Edit", systemImage: "pencil") { isEditing = true }
-                Menu {
-                    Button("Duplicate", systemImage: "plus.square.on.square") {
-                        Task { await manager.duplicate(tunnel) }
-                    }
-                    Button("Export…", systemImage: "square.and.arrow.up") { isExporting = true }
-                    Button("Copy Configuration", systemImage: "doc.on.doc") {
-                        Pasteboard.copy(manager.configurationText(for: tunnel))
-                    }
-                    Divider()
-                    Button("Delete…", systemImage: "trash", role: .destructive) { isConfirmingDelete = true }
-                } label: {
-                    Label("More", systemImage: "ellipsis.circle")
+                Button(status.isActive ? "Disconnect" : "Connect",
+                       systemImage: status.isActive ? "stop.circle" : "play.circle") {
+                    Task { await manager.toggle(tunnel) }
                 }
+                .disabled(manager.isBusy(tunnel.id) || status == .invalid)
+                .help(status.isActive ? "Disconnect" : "Connect")
+                Button("Edit", systemImage: "pencil") { isEditing = true }
+                    .help("Edit")
+                Button("Duplicate", systemImage: "plus.square.on.square") {
+                    Task { await manager.duplicate(tunnel) }
+                }
+                .help("Duplicate")
+                Button("Export…", systemImage: "square.and.arrow.up") { isExporting = true }
+                    .help("Export")
+                Button("Copy Configuration", systemImage: "doc.on.doc") {
+                    Pasteboard.copy(manager.configurationText(for: tunnel))
+                }
+                .help("Copy Configuration")
+                Button("Delete…", systemImage: "trash", role: .destructive) { isConfirmingDelete = true }
+                    .help("Delete")
             }
         }
         .sheet(isPresented: $isEditing) {
@@ -140,47 +154,42 @@ struct TunnelDetailView: View {
                 }
                 HStack(spacing: 8) {
                     StatusBadge(status: status)
-                    if tunnel.connectOnDemand {
-                        TagPill(title: "On demand", systemImage: "bolt.fill")
-                    }
-                }
-                if manager.isAwaitingHandshake(tunnel.id) {
-                    Label("No handshake from the peer yet. Routed traffic and tunnel DNS are on hold until it answers; check the endpoint or disconnect.",
-                          systemImage: "exclamationmark.triangle.fill")
-                        .font(.callout)
-                        .foregroundStyle(.orange)
-                        .fixedSize(horizontal: false, vertical: true)
+                    onDemandToggle(for: tunnel)
                 }
             }
             Spacer()
-            connectButton(for: tunnel, status: status)
         }
         .padding(.bottom, 4)
     }
 
-    @ViewBuilder
-    private func connectButton(for tunnel: Tunnel, status: TunnelStatus) -> some View {
-        let busy = manager.isBusy(tunnel.id) || status.isTransitioning
-        let label = HStack(spacing: 8) {
-            if busy {
-                ProgressView().controlSize(.small)
-            }
-            Text(status.isActive ? "Disconnect" : "Connect")
+    /// A pill beside the status badge that both shows and toggles Connect on Demand, so it can
+    /// be flipped without opening the editor.
+    private func onDemandToggle(for tunnel: Tunnel) -> some View {
+        let isOn = tunnel.connectOnDemand
+        return Button {
+            var updated = tunnel
+            updated.connectOnDemand.toggle()
+            Task { await manager.update(updated) }
+        } label: {
+            Label("On demand", systemImage: isOn ? "bolt.fill" : "bolt.slash")
+                .contentTransition(.symbolEffect(.replace))
         }
-        .frame(minWidth: 100)
-
-        Group {
-            if status.isActive {
-                Button { Task { await manager.toggle(tunnel) } } label: { label }
-                    .buttonStyle(.glass)
-            } else {
-                Button { Task { await manager.toggle(tunnel) } } label: { label }
-                    .buttonStyle(.glassProminent)
-            }
-        }
-        .controlSize(.large)
-        .disabled(manager.isBusy(tunnel.id) || status == .invalid)
-        .keyboardShortcut(.return, modifiers: .command)
+        .font(.caption2.weight(.semibold))
+        .lineLimit(1)
+        .fixedSize()
+        .foregroundStyle(isOn ? .green : .secondary)
+        .padding(.horizontal, 8)
+        .padding(.vertical, 3)
+        .glassEffect(isOn ? .regular.tint(.green.opacity(0.3)) : .regular, in: .capsule)
+        .buttonStyle(.plain)
+        .disabled(manager.isBusy(tunnel.id))
+        .help(isOn
+              ? "Connect on demand is on. macOS automatically reconnects this tunnel while you're online. Click to turn it off."
+              : "Connect on demand is off. Click to turn it on.")
+        .accessibilityLabel("Connect on demand")
+        .accessibilityValue(isOn ? "On" : "Off")
+        .accessibilityAddTraits(.isButton)
+        .accessibilityHint("Double-tap to turn \(isOn ? "off" : "on")")
     }
 
     private func statsGrid(status: TunnelStatus, statistics: TunnelRuntimeStatistics?, latest: ThroughputSample?) -> some View {
@@ -216,7 +225,7 @@ struct TunnelDetailView: View {
             detailRow("Public key") {
                 HStack(spacing: 6) {
                     Text(interface.publicKey?.base64Key ?? "Invalid private key")
-                        .font(.callout.monospaced())
+                        .font(.caption.monospaced())
                         .textSelection(.enabled)
                     if let key = interface.publicKey?.base64Key {
                         CopyButton(text: key)
@@ -225,21 +234,21 @@ struct TunnelDetailView: View {
             }
             detailRow("Addresses") {
                 Text(interface.addresses.isEmpty ? "—" : interface.addresses.map(\.description).joined(separator: ", "))
-                    .font(.callout.monospaced())
+                    .font(.caption.monospaced())
             }
             detailRow("DNS") {
                 let entries = interface.dnsServers + interface.dnsSearchDomains
                 Text(entries.isEmpty ? "System default" : entries.joined(separator: ", "))
-                    .font(.callout.monospaced())
+                    .font(.caption.monospaced())
             }
             detailRow("Listen port") {
-                Text(interface.listenPort.map(String.init) ?? "Automatic").font(.callout.monospaced())
+                Text(interface.listenPort.map(String.init) ?? "Automatic").font(.caption.monospaced())
             }
             detailRow("MTU") {
-                Text(interface.mtu.map(String.init) ?? "Automatic").font(.callout.monospaced())
+                Text(interface.mtu.map(String.init) ?? "Automatic").font(.caption.monospaced())
             }
             detailRow("Backend") {
-                Text(manager.backend.kind.displayName).font(.callout)
+                Text(manager.backend.kind.displayName).font(.caption)
             }
         }
     }
@@ -252,7 +261,7 @@ struct TunnelDetailView: View {
             content()
                 .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .font(.callout)
+        .font(.caption)
     }
 }
 
@@ -276,11 +285,6 @@ struct PeerRow: View {
                     TagPill(title: "Full tunnel")
                 }
                 Spacer()
-                if let runtime, isConnected {
-                    Text("↓ \(ByteFormatting.bytes(runtime.receivedBytes))  ↑ \(ByteFormatting.bytes(runtime.sentBytes))")
-                        .font(.caption.monospacedDigit())
-                        .foregroundStyle(.secondary)
-                }
             }
 
             Grid(alignment: .leadingFirstTextBaseline, horizontalSpacing: 12, verticalSpacing: 4) {

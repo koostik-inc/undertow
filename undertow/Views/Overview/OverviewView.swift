@@ -8,8 +8,6 @@ struct OverviewView: View {
 
     @State private var window: ChartWindow = .oneMinute
 
-    private let columns = [GridItem(.adaptive(minimum: 150), spacing: 12)]
-
     var body: some View {
         ScrollView {
             GlassEffectContainer(spacing: 16) {
@@ -18,19 +16,24 @@ struct OverviewView: View {
                         emptyState
                     } else {
                         statTiles
-                        Card("Network Map", systemImage: "point.3.connected.trianglepath.dotted") {
-                            NetworkMapView(onSelectTunnel: onSelectTunnel)
-                                .frame(height: 400)
-                        } accessory: {
-                            Text("\(manager.connectedTunnelCount) of \(manager.tunnels.count) connected")
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                        }
-                        Card("Combined Throughput", systemImage: "chart.xyaxis.line") {
-                            ThroughputChartView(samples: manager.aggregateHistory.samples, window: window)
-                                .frame(height: 220)
-                        } accessory: {
-                            windowPicker
+                        HStack(alignment: .top, spacing: 16) {
+                            Card("Network Map", systemImage: "point.3.connected.trianglepath.dotted") {
+                                NetworkMapView(onSelectTunnel: onSelectTunnel)
+                                    .frame(height: 400)
+                            } accessory: {
+                                Text("\(manager.connectedTunnelCount) of \(manager.tunnels.count) connected")
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                            }
+                            .frame(maxWidth: .infinity)
+
+                            Card("Throughput", systemImage: "chart.xyaxis.line") {
+                                ThroughputChartView(samples: manager.aggregateHistory.samples, window: window)
+                                    .frame(height: 400)
+                            } accessory: {
+                                windowPicker
+                            }
+                            .frame(maxWidth: .infinity)
                         }
                     }
                 }
@@ -43,7 +46,7 @@ struct OverviewView: View {
 
     private var statTiles: some View {
         let latest = manager.aggregateHistory.latest
-        return LazyVGrid(columns: columns, spacing: 12) {
+        return HStack(spacing: 12) {
             StatTile(title: "Connected", systemImage: "lock.shield", tint: TunnelStatus.connected.color,
                      text: "\(manager.connectedTunnelCount) of \(manager.tunnels.count)")
             StatTile(title: "Download", systemImage: "arrow.down.circle", tint: TrafficColor.download,
@@ -52,6 +55,13 @@ struct OverviewView: View {
                      text: ByteFormatting.rate(latest?.sentBytesPerSecond ?? 0))
             StatTile(title: "Transferred", systemImage: "arrow.up.arrow.down",
                      text: ByteFormatting.bytes(manager.totalReceivedBytes + manager.totalSentBytes))
+            StatTile(title: "Uptime", systemImage: "clock") {
+                if let start = manager.longestConnectionStart {
+                    Text(start, style: .timer)
+                } else {
+                    Text("—")
+                }
+            }
         }
     }
 

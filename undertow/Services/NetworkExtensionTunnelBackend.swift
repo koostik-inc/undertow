@@ -202,6 +202,12 @@ final class NetworkExtensionTunnelBackend: TunnelBackend {
 
     func stop(_ tunnel: Tunnel) async throws {
         guard let manager = managers[tunnel.id] else { throw TunnelBackendError.notInstalled }
+        // Connect on Demand has no "stay off but keep it armed" state: the moment on-demand is
+        // enabled, the system tends to reconnect almost immediately while the Mac is online —
+        // even a bare re-save of the on-demand configuration itself can trigger it, not just
+        // new traffic. So a disconnect can't be trusted to stick here; see
+        // `TunnelManager.disconnect(_:)`, which turns the tunnel's on-demand *preference* off
+        // first (visibly, in the UI) before this is ever called, whenever it's on.
         manager.connection.stopVPNTunnel()
         refreshStatuses()
     }

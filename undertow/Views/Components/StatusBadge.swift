@@ -27,17 +27,29 @@ struct StatusDot: View {
 }
 
 /// Icon plus label on a status-tinted Liquid Glass capsule. Never color alone.
+///
+/// Reserves enough width for the longest status word ("Disconnecting") so the badge never
+/// resizes — or wraps its text onto a second line — as the tunnel's status changes.
 struct StatusBadge: View {
     let status: TunnelStatus
 
+    private static let longestDisplayName = TunnelStatus.allCases.map(\.displayName).max { $0.count < $1.count }!
+
     var body: some View {
-        Label(status.displayName, systemImage: status.systemImage)
-            .font(.caption.weight(.semibold))
-            .foregroundStyle(status.color)
-            .padding(.horizontal, 10)
-            .padding(.vertical, 5)
-            .glassEffect(.regular.tint(status.color.opacity(0.25)), in: .capsule)
-            .symbolEffect(.rotate, isActive: status.isTransitioning)
+        ZStack(alignment: .leading) {
+            Label(Self.longestDisplayName, systemImage: status.systemImage)
+                .opacity(0)
+                .accessibilityHidden(true)
+            Label(status.displayName, systemImage: status.systemImage)
+                .foregroundStyle(status.color)
+                .symbolEffect(.rotate, isActive: status.isTransitioning)
+        }
+        .font(.caption.weight(.semibold))
+        .lineLimit(1)
+        .fixedSize()
+        .padding(.horizontal, 10)
+        .padding(.vertical, 5)
+        .glassEffect(.regular.tint(status.color.opacity(0.25)), in: .capsule)
     }
 }
 

@@ -28,9 +28,10 @@ nonisolated struct NetworkMapLayout {
 
     init(tunnels: [Tunnel], size: CGSize) {
         let center = CGPoint(x: size.width / 2, y: size.height / 2)
-        let base = min(size.width, size.height)
-        let tunnelRadius = base * 0.26
-        let peerRadius = base * 0.44
+        // Leave room outside the peer ring for labels, which are drawn away from the center.
+        let labelMargin: CGFloat = 40
+        let peerRadius = max(min(size.width, size.height) / 2 - labelMargin, 60)
+        let tunnelRadius = peerRadius * 0.58
         self.center = center
         self.tunnelRadius = tunnelRadius
         self.peerRadius = peerRadius
@@ -80,7 +81,7 @@ struct NetworkMapView: View {
             ZStack {
                 TimelineView(.animation(minimumInterval: 1.0 / 30.0)) { timeline in
                     Canvas { context, size in
-                        drawLinks(in: &context, layout: layout,
+                        drawLinks(in: &context, size: size, layout: layout,
                                   time: timeline.date.timeIntervalSinceReferenceDate)
                     }
                 }
@@ -184,7 +185,7 @@ struct NetworkMapView: View {
 
     // MARK: - Canvas: rings, edges, particles, labels
 
-    private func drawLinks(in context: inout GraphicsContext, layout: NetworkMapLayout, time: TimeInterval) {
+    private func drawLinks(in context: inout GraphicsContext, size: CGSize, layout: NetworkMapLayout, time: TimeInterval) {
         drawGuideRings(in: &context, layout: layout)
 
         for node in layout.tunnelNodes {
@@ -215,15 +216,26 @@ struct NetworkMapView: View {
                 }
             }
 
-            drawTunnelLabels(in: &context, node: node, status: status, latest: latest)
+            drawTunnelLabels(in: &context, size: size, node: node, status: status, latest: latest)
             for peerNode in node.peers {
-                drawPeerLabel(in: &context, node: peerNode, center: layout.center)
+                drawPeerLabel(in: &context, size: size, node: peerNode, center: layout.center)
             }
         }
 
-        context.draw(Text("This device").font(.caption).foregroundStyle(.secondary),
-                     at: CGPoint(x: layout.center.x, y: layout.center.y + NetworkMapLayout.deviceRadius + 8),
-                     anchor: .top)
+        drawLabel(Text("This device").font(.caption).foregroundStyle(.secondary),
+                  in: &context, size: size,
+                  at: CGPoint(x: layout.center.x, y: layout.center.y + NetworkMapLayout.deviceRadius + 8),
+                  anchor: .top)
+    }
+
+    /// Draws text anchored at a point, shifted as needed so it stays fully inside the canvas.
+    private func drawLabel(_ text: Text, in context: inout GraphicsContext, size: CGSize, at point: CGPoint, anchor: UnitPoint) {
+        let resolved = context.resolve(text)
+        let textSize = resolved.measure(in: size)
+        var origin = CGPoint(x: point.x - textSize.width * anchor.x, y: point.y - textSize.height * anchor.y)
+        origin.x = min(max(origin.x, 2), max(size.width - textSize.width - 2, 2))
+        origin.y = min(max(origin.y, 2), max(size.height - textSize.height - 2, 2))
+        context.draw(resolved, in: CGRect(origin: origin, size: textSize))
     }
 
     private func drawGuideRings(in context: inout GraphicsContext, layout: NetworkMapLayout) {
@@ -269,27 +281,30 @@ struct NetworkMapView: View {
         }
     }
 
-    private func drawTunnelLabels(in context: inout GraphicsContext, node: NetworkMapLayout.TunnelNode,
+    private func drawTunnelLabels(in context: inout GraphicsContext, size: CGSize, node: NetworkMapLayout.TunnelNode,
                                   status: TunnelStatus, latest: ThroughputSample?) {
         let radius = NetworkMapLayout.tunnelNodeRadius
         let position = node.position
         let title = node.hiddenPeerCount > 0
             ? "\(node.tunnel.name)  +\(node.hiddenPeerCount) peers"
             : node.tunnel.name
-        context.draw(Text(title).font(.caption.weight(.semibold)).foregroundStyle(.primary),
-                     at: CGPoint(x: position.x, y: position.y + radius + 6), anchor: .top)
+        drawLabel(Text(title).font(.caption.weight(.semibold)).foregroundStyle(.primary),
+                  in: &context, size: size,
+                  at: CGPoint(x: position.x, y: position.y + radius + 6), anchor: .top)
 
         if status == .connected, let latest {
             let rates = "↓ \(ByteFormatting.rate(latest.receivedBytesPerSecond))  ↑ \(ByteFormatting.rate(latest.sentBytesPerSecond))"
-            context.draw(Text(rates).font(.caption2.monospacedDigit()).foregroundStyle(.secondary),
-                         at: CGPoint(x: position.x, y: position.y + radius + 22), anchor: .top)
+            drawLabel(Text(rates).font(.caption2.monospacedDigit()).foregroundStyle(.secondary),
+                      in: &context, size: size,
+                      at: CGPoint(x: position.x, y: position.y + radius + 22), anchor: .top)
         } else if status != .disconnected {
-            context.draw(Text(status.displayName).font(.caption2).foregroundStyle(status.color),
-                         at: CGPoint(x: position.x, y: position.y + radius + 22), anchor: .top)
+            drawLabel(Text(status.displayName).font(.caption2).foregroundStyle(status.color),
+                      in: &context, size: size,
+                      at: CGPoint(x: position.x, y: position.y + radius + 22), anchor: .top)
         }
     }
 
-    private func drawPeerLabel(in context: inout GraphicsContext, node: NetworkMapLayout.PeerNode, center: CGPoint) {
+    private func drawPeerLabel(in context: inout GraphicsContext, size: CGSize, node: NetworkMapLayout.PeerNode, center: CGPoint) {
         let radius = NetworkMapLayout.peerNodeRadius
         let position = node.position
         // Push the label outward from the center so it never overlaps the edge.
@@ -298,8 +313,8 @@ struct NetworkMapView: View {
         let direction = CGPoint(x: dx / length, y: dy / length)
         let labelPoint = CGPoint(x: position.x + direction.x * (radius + 6), y: position.y + direction.y * (radius + 6))
         let anchor = UnitPoint(x: 0.5 - direction.x * 0.5, y: 0.5 - direction.y * 0.5)
-        context.draw(Text(node.peer.displayLabel).font(.caption2).foregroundStyle(.secondary),
-                     at: labelPoint, anchor: anchor)
+        drawLabel(Text(node.peer.displayLabel).font(.caption2).foregroundStyle(.secondary),
+                  in: &context, size: size, at: labelPoint, anchor: anchor)
     }
 }
 
