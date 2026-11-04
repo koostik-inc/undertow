@@ -20,24 +20,17 @@ final class NetworkExtensionTunnelBackend: TunnelBackend {
         (Bundle.main.bundleIdentifier ?? "undertow") + ".PacketTunnel"
     }
 
-    /// True when a packet tunnel extension ships inside this app bundle.
+    /// True when the packet tunnel system extension ships inside this app bundle.
     nonisolated static var isExtensionBundled: Bool {
-        var candidates: [URL] = []
-        if let plugIns = Bundle.main.builtInPlugInsURL {
-            candidates.append(plugIns)
-        }
         #if os(macOS)
-        candidates.append(Bundle.main.bundleURL.appending(path: "Contents/Library/SystemExtensions"))
-        #endif
-        for directory in candidates {
-            guard let items = try? FileManager.default.contentsOfDirectory(at: directory, includingPropertiesForKeys: nil) else {
-                continue
-            }
-            if items.contains(where: { $0.pathExtension == "appex" || $0.pathExtension == "systemextension" }) {
-                return true
-            }
+        let directory = Bundle.main.bundleURL.appending(path: "Contents/Library/SystemExtensions")
+        guard let items = try? FileManager.default.contentsOfDirectory(at: directory, includingPropertiesForKeys: nil) else {
+            return false
         }
+        return items.contains { $0.pathExtension == "systemextension" }
+        #else
         return false
+        #endif
     }
 
     /// True when this process is signed with the packet tunnel entitlement.
@@ -65,6 +58,9 @@ final class NetworkExtensionTunnelBackend: TunnelBackend {
     private var managers: [UUID: NETunnelProviderManager] = [:]
     private var lastKnownStatuses: [UUID: TunnelStatus] = [:]
     private var observer: NSObjectProtocol?
+    #if os(macOS)
+    private let systemExtensionActivator = SystemExtensionActivator()
+    #endif
 
     deinit {
         if let observer {
@@ -73,6 +69,13 @@ final class NetworkExtensionTunnelBackend: TunnelBackend {
     }
 
     func prepare() async {
+        // Fire-and-forget: activation can require approval in System Settings, which may take
+        // an arbitrary amount of time (or never happen). The `NETunnelProviderManager` configs
+        // below are loaded/saved independently and stay inert until the extension is active.
+        #if os(macOS)
+        systemExtensionActivator.activate(identifier: Self.providerBundleIdentifier)
+        #endif
+
         do {
             let all = try await NETunnelProviderManager.loadAllFromPreferences()
             for manager in all {

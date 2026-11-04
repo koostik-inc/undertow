@@ -24,10 +24,13 @@ struct SettingsView: View {
                                value: NetworkExtensionTunnelBackend.isExtensionBundled ? "Bundled" : "Not bundled")
                 LabeledContent("Network Extension entitlement",
                                value: NetworkExtensionTunnelBackend.hasPacketTunnelEntitlement ? "Granted" : "Missing")
+                #if os(macOS)
+                LabeledContent("System extension", value: SystemExtensionActivationStatus.shared.state.displayName)
+                #endif
             } header: {
                 Text("Tunnel Engine")
             } footer: {
-                Text("The backend preference takes effect the next time Undertow launches. The Network Extension backend requires the bundled packet tunnel extension “\(NetworkExtensionTunnelBackend.providerBundleIdentifier)” and the Network Extension (Packet Tunnel) entitlement, which Apple only grants to paid Apple Developer Program teams.")
+                Text("The backend preference takes effect the next time Undertow launches. The Network Extension backend requires the bundled packet tunnel system extension “\(NetworkExtensionTunnelBackend.providerBundleIdentifier)”, which must be approved in System Settings → Privacy & Security after installing a Developer ID–signed build.")
             }
 
             Section("About") {

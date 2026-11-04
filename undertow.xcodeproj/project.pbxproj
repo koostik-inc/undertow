@@ -7,19 +7,12 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		E9D996C5308C007B00B50A3E /* NetworkExtension.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = E9D996C4308C007B00B50A3E /* NetworkExtension.framework */; };
-		E9D996CD308C007B00B50A3E /* PacketTunnel.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = E9D996C2308C007B00B50A3E /* PacketTunnel.appex */; platformFilters = (macos, ); settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		E9D9A0010000000000B50A3E /* WireGuardKit in Frameworks */ = {isa = PBXBuildFile; productRef = E9D9A0020000000000B50A3E /* WireGuardKit */; };
+		E9FAC5F8309BC5AE00F3348D /* NetworkExtension.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = E9D996C4308C007B00B50A3E /* NetworkExtension.framework */; };
+		E9FAC602309BC5AE00F3348D /* io.craterlabs.undertow.PacketTunnel.systemextension in Embed System Extensions */ = {isa = PBXBuildFile; fileRef = E9FAC5F7309BC5AE00F3348D /* io.craterlabs.undertow.PacketTunnel.systemextension */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
-		E9D996CB308C007B00B50A3E /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = 000000000000000000000000 /* Project object */;
-			proxyType = 1;
-			remoteGlobalIDString = E9D996C1308C007B00B50A3E;
-			remoteInfo = PacketTunnel;
-		};
 		E9D9A0030000000000B50A3E /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 000000000000000000000000 /* Project object */;
@@ -27,42 +20,49 @@
 			remoteGlobalIDString = E9D996D3308C007C00B50A3E;
 			remoteInfo = WireGuardGoBridgemacOS;
 		};
+		E9FAC600309BC5AE00F3348D /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 000000000000000000000000 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = E9FAC5F6309BC5AE00F3348D;
+			remoteInfo = PacketTunnelSystemExtension;
+		};
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXCopyFilesBuildPhase section */
-		E9D996D2308C007B00B50A3E /* Embed Foundation Extensions */ = {
+		E9FAC603309BC5AE00F3348D /* Embed System Extensions */ = {
 			isa = PBXCopyFilesBuildPhase;
-			dstPath = "";
-			dstSubfolder = PlugIns;
+			dstPath = "$(SYSTEM_EXTENSIONS_FOLDER_PATH)";
+			dstSubfolder = Product;
 			files = (
-				E9D996CD308C007B00B50A3E /* PacketTunnel.appex in Embed Foundation Extensions */,
+				E9FAC602309BC5AE00F3348D /* io.craterlabs.undertow.PacketTunnel.systemextension in Embed System Extensions */,
 			);
-			name = "Embed Foundation Extensions";
+			name = "Embed System Extensions";
 		};
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
 		000000000000000000000120 /* undertow.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = undertow.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		E9D996B0308BFA4100B50A3E /* undertowTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = undertowTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
-		E9D996C2308C007B00B50A3E /* PacketTunnel.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = PacketTunnel.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		E9D996C4308C007B00B50A3E /* NetworkExtension.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = NetworkExtension.framework; path = System/Library/Frameworks/NetworkExtension.framework; sourceTree = SDKROOT; };
+		E9FAC5F7309BC5AE00F3348D /* io.craterlabs.undertow.PacketTunnel.systemextension */ = {isa = PBXFileReference; explicitFileType = "wrapper.system-extension"; includeInIndex = 0; path = io.craterlabs.undertow.PacketTunnel.systemextension; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
-		E9D996CE308C007B00B50A3E /* Exceptions for "PacketTunnel" folder in "PacketTunnel" target */ = {
-			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
-			membershipExceptions = (
-				Info.plist,
-			);
-			target = E9D996C1308C007B00B50A3E /* PacketTunnel */;
-		};
-		E9D9A0040000000000B50A3E /* Exceptions for "undertow" folder in "PacketTunnel" target */ = {
+		E9D9A0040000000000B50A3E /* Exceptions for "undertow" folder in "PacketTunnelSystemExtension" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				Services/TunnelConfigurationKeychain.swift,
 				Services/TunnelProviderMessage.swift,
 			);
-			target = E9D996C1308C007B00B50A3E /* PacketTunnel */;
+			target = E9FAC5F6309BC5AE00F3348D /* PacketTunnelSystemExtension */;
+		};
+		E9FAC606309BC5AE00F3348D /* Exceptions for "PacketTunnelSystemExtension" folder in "PacketTunnelSystemExtension" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = E9FAC5F6309BC5AE00F3348D /* PacketTunnelSystemExtension */;
 		};
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
@@ -70,7 +70,7 @@
 		000000000000000000000010 /* undertow */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
-				E9D9A0040000000000B50A3E /* Exceptions for "undertow" folder in "PacketTunnel" target */,
+				E9D9A0040000000000B50A3E /* Exceptions for "undertow" folder in "PacketTunnelSystemExtension" target */,
 			);
 			path = undertow;
 			sourceTree = "<group>";
@@ -80,12 +80,12 @@
 			path = undertowTests;
 			sourceTree = "<group>";
 		};
-		E9D996C6308C007B00B50A3E /* PacketTunnel */ = {
+		E9FAC5F9309BC5AE00F3348D /* PacketTunnelSystemExtension */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
-				E9D996CE308C007B00B50A3E /* Exceptions for "PacketTunnel" folder in "PacketTunnel" target */,
+				E9FAC606309BC5AE00F3348D /* Exceptions for "PacketTunnelSystemExtension" folder in "PacketTunnelSystemExtension" target */,
 			);
-			path = PacketTunnel;
+			path = PacketTunnelSystemExtension;
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
@@ -101,10 +101,10 @@
 			files = (
 			);
 		};
-		E9D996BF308C007B00B50A3E /* Frameworks */ = {
+		E9FAC5F4309BC5AE00F3348D /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			files = (
-				E9D996C5308C007B00B50A3E /* NetworkExtension.framework in Frameworks */,
+				E9FAC5F8309BC5AE00F3348D /* NetworkExtension.framework in Frameworks */,
 				E9D9A0010000000000B50A3E /* WireGuardKit in Frameworks */,
 			);
 		};
@@ -116,7 +116,7 @@
 			children = (
 				000000000000000000000010 /* undertow */,
 				E9D996B1308BFA4100B50A3E /* undertowTests */,
-				E9D996C6308C007B00B50A3E /* PacketTunnel */,
+				E9FAC5F9309BC5AE00F3348D /* PacketTunnelSystemExtension */,
 				E9D996C3308C007B00B50A3E /* Frameworks */,
 				000000000000000000000020 /* Products */,
 			);
@@ -127,7 +127,7 @@
 			children = (
 				000000000000000000000120 /* undertow.app */,
 				E9D996B0308BFA4100B50A3E /* undertowTests.xctest */,
-				E9D996C2308C007B00B50A3E /* PacketTunnel.appex */,
+				E9FAC5F7309BC5AE00F3348D /* io.craterlabs.undertow.PacketTunnel.systemextension */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -163,12 +163,12 @@
 				000000000000000120000000 /* Sources */,
 				000000000000000130000000 /* Frameworks */,
 				000000000000000140000000 /* Resources */,
-				E9D996D2308C007B00B50A3E /* Embed Foundation Extensions */,
+				E9FAC603309BC5AE00F3348D /* Embed System Extensions */,
 			);
 			buildRules = (
 			);
 			dependencies = (
-				E9D996CC308C007B00B50A3E /* PBXTargetDependency */,
+				E9FAC601309BC5AE00F3348D /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				000000000000000000000010 /* undertow */,
@@ -196,13 +196,13 @@
 			productReference = E9D996B0308BFA4100B50A3E /* undertowTests.xctest */;
 			productType = "com.apple.product-type.bundle.unit-test";
 		};
-		E9D996C1308C007B00B50A3E /* PacketTunnel */ = {
+		E9FAC5F6309BC5AE00F3348D /* PacketTunnelSystemExtension */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = E9D996CF308C007B00B50A3E /* Build configuration list for PBXNativeTarget "PacketTunnel" */;
+			buildConfigurationList = E9FAC607309BC5AE00F3348D /* Build configuration list for PBXNativeTarget "PacketTunnelSystemExtension" */;
 			buildPhases = (
-				E9D996BE308C007B00B50A3E /* Sources */,
-				E9D996BF308C007B00B50A3E /* Frameworks */,
-				E9D996C0308C007B00B50A3E /* Resources */,
+				E9FAC5F3309BC5AE00F3348D /* Sources */,
+				E9FAC5F4309BC5AE00F3348D /* Frameworks */,
+				E9FAC5F5309BC5AE00F3348D /* Resources */,
 			);
 			buildRules = (
 			);
@@ -210,15 +210,15 @@
 				E9D9A0050000000000B50A3E /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
-				E9D996C6308C007B00B50A3E /* PacketTunnel */,
+				E9FAC5F9309BC5AE00F3348D /* PacketTunnelSystemExtension */,
 			);
-			name = PacketTunnel;
+			name = PacketTunnelSystemExtension;
 			packageProductDependencies = (
 				E9D9A0020000000000B50A3E /* WireGuardKit */,
 			);
-			productName = PacketTunnel;
-			productReference = E9D996C2308C007B00B50A3E /* PacketTunnel.appex */;
-			productType = "com.apple.product-type.app-extension";
+			productName = PacketTunnelSystemExtension;
+			productReference = E9FAC5F7309BC5AE00F3348D /* io.craterlabs.undertow.PacketTunnel.systemextension */;
+			productType = "com.apple.product-type.system-extension";
 		};
 /* End PBXNativeTarget section */
 
@@ -236,10 +236,10 @@
 					E9D996AF308BFA4100B50A3E = {
 						CreatedOnToolsVersion = 27.0;
 					};
-					E9D996C1308C007B00B50A3E = {
+					E9D996D3308C007C00B50A3E = {
 						CreatedOnToolsVersion = 27.0;
 					};
-					E9D996D3308C007C00B50A3E = {
+					E9FAC5F6309BC5AE00F3348D = {
 						CreatedOnToolsVersion = 27.0;
 					};
 				};
@@ -263,8 +263,8 @@
 			targets = (
 				000000000000000100000000 /* undertow */,
 				E9D996AF308BFA4100B50A3E /* undertowTests */,
-				E9D996C1308C007B00B50A3E /* PacketTunnel */,
 				E9D996D3308C007C00B50A3E /* WireGuardGoBridgemacOS */,
+				E9FAC5F6309BC5AE00F3348D /* PacketTunnelSystemExtension */,
 			);
 		};
 /* End PBXProject section */
@@ -280,7 +280,7 @@
 			files = (
 			);
 		};
-		E9D996C0308C007B00B50A3E /* Resources */ = {
+		E9FAC5F5309BC5AE00F3348D /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			files = (
 			);
@@ -298,7 +298,7 @@
 			files = (
 			);
 		};
-		E9D996BE308C007B00B50A3E /* Sources */ = {
+		E9FAC5F3309BC5AE00F3348D /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			files = (
 			);
@@ -306,18 +306,15 @@
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
-		E9D996CC308C007B00B50A3E /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			platformFilters = (
-				macos,
-			);
-			target = E9D996C1308C007B00B50A3E /* PacketTunnel */;
-			targetProxy = E9D996CB308C007B00B50A3E /* PBXContainerItemProxy */;
-		};
 		E9D9A0050000000000B50A3E /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = E9D996D3308C007C00B50A3E /* WireGuardGoBridgemacOS */;
 			targetProxy = E9D9A0030000000000B50A3E /* PBXContainerItemProxy */;
+		};
+		E9FAC601309BC5AE00F3348D /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = E9FAC5F6309BC5AE00F3348D /* PacketTunnelSystemExtension */;
+			targetProxy = E9FAC600309BC5AE00F3348D /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
@@ -459,12 +456,13 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = YES;
-				CODE_SIGN_ENTITLEMENTS = undertow/undertow.entitlements;
+				CODE_SIGN_ENTITLEMENTS = "undertow/undertow-Debug.entitlements";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = US8VJ65AVF;
 				ENABLE_APP_SANDBOX = YES;
 				ENABLE_DEBUG_DYLIB = YES;
+				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_INCOMING_NETWORK_CONNECTIONS = NO;
 				ENABLE_OUTGOING_NETWORK_CONNECTIONS = NO;
 				ENABLE_PREVIEWS = YES;
@@ -518,6 +516,7 @@
 				DEVELOPMENT_TEAM = US8VJ65AVF;
 				ENABLE_APP_SANDBOX = YES;
 				ENABLE_DEBUG_DYLIB = YES;
+				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_INCOMING_NETWORK_CONNECTIONS = NO;
 				ENABLE_OUTGOING_NETWORK_CONNECTIONS = NO;
 				ENABLE_PREVIEWS = YES;
@@ -612,88 +611,6 @@
 			};
 			name = Release;
 		};
-		E9D996D0308C007B00B50A3E /* Debug configuration for PBXNativeTarget "PacketTunnel" */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				CODE_SIGN_ENTITLEMENTS = PacketTunnel/PacketTunnel.entitlements;
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = US8VJ65AVF;
-				ENABLE_APP_SANDBOX = YES;
-				ENABLE_INCOMING_NETWORK_CONNECTIONS = YES;
-				ENABLE_OUTGOING_NETWORK_CONNECTIONS = YES;
-				ENABLE_RESOURCE_ACCESS_AUDIO_INPUT = NO;
-				ENABLE_RESOURCE_ACCESS_BLUETOOTH = NO;
-				ENABLE_RESOURCE_ACCESS_CALENDARS = NO;
-				ENABLE_RESOURCE_ACCESS_CAMERA = NO;
-				ENABLE_RESOURCE_ACCESS_CONTACTS = NO;
-				ENABLE_RESOURCE_ACCESS_LOCATION = NO;
-				ENABLE_RESOURCE_ACCESS_PRINTING = NO;
-				ENABLE_RESOURCE_ACCESS_USB = NO;
-				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = PacketTunnel/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = PacketTunnel;
-				INFOPLIST_KEY_NSHumanReadableCopyright = "";
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/../Frameworks",
-					"@executable_path/../../../../Frameworks",
-				);
-				MACOSX_DEPLOYMENT_TARGET = 26.6.2;
-				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = io.craterlabs.undertow.PacketTunnel;
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				SDKROOT = macosx;
-				SKIP_INSTALL = YES;
-				STRING_CATALOG_GENERATE_SYMBOLS = YES;
-				SWIFT_APPROACHABLE_CONCURRENCY = YES;
-				SWIFT_EMIT_LOC_STRINGS = YES;
-				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
-				SWIFT_VERSION = 5.0;
-			};
-			name = Debug;
-		};
-		E9D996D1308C007B00B50A3E /* Release configuration for PBXNativeTarget "PacketTunnel" */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				CODE_SIGN_ENTITLEMENTS = PacketTunnel/PacketTunnel.entitlements;
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = US8VJ65AVF;
-				ENABLE_APP_SANDBOX = YES;
-				ENABLE_INCOMING_NETWORK_CONNECTIONS = YES;
-				ENABLE_OUTGOING_NETWORK_CONNECTIONS = YES;
-				ENABLE_RESOURCE_ACCESS_AUDIO_INPUT = NO;
-				ENABLE_RESOURCE_ACCESS_BLUETOOTH = NO;
-				ENABLE_RESOURCE_ACCESS_CALENDARS = NO;
-				ENABLE_RESOURCE_ACCESS_CAMERA = NO;
-				ENABLE_RESOURCE_ACCESS_CONTACTS = NO;
-				ENABLE_RESOURCE_ACCESS_LOCATION = NO;
-				ENABLE_RESOURCE_ACCESS_PRINTING = NO;
-				ENABLE_RESOURCE_ACCESS_USB = NO;
-				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = PacketTunnel/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = PacketTunnel;
-				INFOPLIST_KEY_NSHumanReadableCopyright = "";
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/../Frameworks",
-					"@executable_path/../../../../Frameworks",
-				);
-				MACOSX_DEPLOYMENT_TARGET = 26.6.2;
-				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = io.craterlabs.undertow.PacketTunnel;
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				SDKROOT = macosx;
-				SKIP_INSTALL = YES;
-				STRING_CATALOG_GENERATE_SYMBOLS = YES;
-				SWIFT_APPROACHABLE_CONCURRENCY = YES;
-				SWIFT_EMIT_LOC_STRINGS = YES;
-				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
-				SWIFT_VERSION = 5.0;
-			};
-			name = Release;
-		};
 		E9D996D5308C007C00B50A3E /* Debug configuration for PBXLegacyTarget "WireGuardGoBridgemacOS" */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -718,6 +635,94 @@
 				OTHER_LDFLAGS = "";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = macosx;
+			};
+			name = Release;
+		};
+		E9FAC604309BC5AE00F3348D /* Debug configuration for PBXNativeTarget "PacketTunnelSystemExtension" */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = "PacketTunnelSystemExtension/PacketTunnelSystemExtension-Debug.entitlements";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = US8VJ65AVF;
+				ENABLE_APP_SANDBOX = YES;
+				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_INCOMING_NETWORK_CONNECTIONS = YES;
+				ENABLE_OUTGOING_NETWORK_CONNECTIONS = YES;
+				ENABLE_RESOURCE_ACCESS_AUDIO_INPUT = NO;
+				ENABLE_RESOURCE_ACCESS_BLUETOOTH = NO;
+				ENABLE_RESOURCE_ACCESS_CALENDARS = NO;
+				ENABLE_RESOURCE_ACCESS_CAMERA = NO;
+				ENABLE_RESOURCE_ACCESS_CONTACTS = NO;
+				ENABLE_RESOURCE_ACCESS_LOCATION = NO;
+				ENABLE_RESOURCE_ACCESS_PRINTING = NO;
+				ENABLE_RESOURCE_ACCESS_USB = NO;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = PacketTunnelSystemExtension/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = PacketTunnelSystemExtension;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				INFOPLIST_KEY_NSSystemExtensionUsageDescription = "Undertow uses this system extension to create secure WireGuard VPN tunnels.";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+					"@executable_path/../../../../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 26.6;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = io.craterlabs.undertow.PacketTunnel;
+				PRODUCT_NAME = io.craterlabs.undertow.PacketTunnel;
+				REGISTER_APP_GROUPS = YES;
+				SDKROOT = macosx;
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		E9FAC605309BC5AE00F3348D /* Release configuration for PBXNativeTarget "PacketTunnelSystemExtension" */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = PacketTunnelSystemExtension/PacketTunnelSystemExtension.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = US8VJ65AVF;
+				ENABLE_APP_SANDBOX = YES;
+				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_INCOMING_NETWORK_CONNECTIONS = YES;
+				ENABLE_OUTGOING_NETWORK_CONNECTIONS = YES;
+				ENABLE_RESOURCE_ACCESS_AUDIO_INPUT = NO;
+				ENABLE_RESOURCE_ACCESS_BLUETOOTH = NO;
+				ENABLE_RESOURCE_ACCESS_CALENDARS = NO;
+				ENABLE_RESOURCE_ACCESS_CAMERA = NO;
+				ENABLE_RESOURCE_ACCESS_CONTACTS = NO;
+				ENABLE_RESOURCE_ACCESS_LOCATION = NO;
+				ENABLE_RESOURCE_ACCESS_PRINTING = NO;
+				ENABLE_RESOURCE_ACCESS_USB = NO;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = PacketTunnelSystemExtension/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = PacketTunnelSystemExtension;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				INFOPLIST_KEY_NSSystemExtensionUsageDescription = "Undertow uses this system extension to create secure WireGuard VPN tunnels.";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+					"@executable_path/../../../../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 26.6;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = io.craterlabs.undertow.PacketTunnel;
+				PRODUCT_NAME = io.craterlabs.undertow.PacketTunnel;
+				REGISTER_APP_GROUPS = YES;
+				SDKROOT = macosx;
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
 			};
 			name = Release;
 		};
@@ -748,19 +753,19 @@
 			);
 			defaultConfigurationName = Release;
 		};
-		E9D996CF308C007B00B50A3E /* Build configuration list for PBXNativeTarget "PacketTunnel" */ = {
-			isa = XCConfigurationList;
-			buildConfigurations = (
-				E9D996D0308C007B00B50A3E /* Debug configuration for PBXNativeTarget "PacketTunnel" */,
-				E9D996D1308C007B00B50A3E /* Release configuration for PBXNativeTarget "PacketTunnel" */,
-			);
-			defaultConfigurationName = Release;
-		};
 		E9D996D4308C007C00B50A3E /* Build configuration list for PBXLegacyTarget "WireGuardGoBridgemacOS" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				E9D996D5308C007C00B50A3E /* Debug configuration for PBXLegacyTarget "WireGuardGoBridgemacOS" */,
 				E9D996D6308C007C00B50A3E /* Release configuration for PBXLegacyTarget "WireGuardGoBridgemacOS" */,
+			);
+			defaultConfigurationName = Release;
+		};
+		E9FAC607309BC5AE00F3348D /* Build configuration list for PBXNativeTarget "PacketTunnelSystemExtension" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				E9FAC604309BC5AE00F3348D /* Debug configuration for PBXNativeTarget "PacketTunnelSystemExtension" */,
+				E9FAC605309BC5AE00F3348D /* Release configuration for PBXNativeTarget "PacketTunnelSystemExtension" */,
 			);
 			defaultConfigurationName = Release;
 		};
